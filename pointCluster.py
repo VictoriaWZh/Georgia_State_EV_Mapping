@@ -76,7 +76,7 @@ class PointCluster:
         poi_list = []
         for val in lat_lons:
             point = LatLon(val['latitude'], val['longitude'])
-            point.setWeight(LatLon.calculate_weight(val['weight']))
+            point.set_weight(LatLon.calculate_weight(val['weight']))
             poi = Poi.find_poi(pois, val['latitude'], val['longitude'])
             if isinstance(poi, Poi):
                 poi = Poi(poi.name, poi.type, point)
@@ -116,6 +116,8 @@ class PointCluster:
             PlacesGeometry.identify_diversity_counties(counties)
         ) if len(counties) > 5 else counties
 
+        print("Starting point clustering for counties...")
+        
         final = []
         for county in charger_list:
             county_points = PointCluster.extract_county_points(county, points)
@@ -126,6 +128,9 @@ class PointCluster:
             coords = np.array([[poi['latitude'], poi['longitude']] for poi in county_points])
             kms_per_radian = 6371.0088
             epsilon = 500 / kms_per_radian  # 500 meters in radians
+
+            if len(coords) < 2:
+                continue
 
             # Perform DBSCAN clustering
             db = DBSCAN(eps=epsilon, min_samples=2, metric=PointCluster.haversine_distance).fit(coords)
@@ -216,11 +221,11 @@ class PointCluster:
             self.coords = np.array([[poi['latitude'], poi['longitude']] for poi in self.points])
 
         kms_per_radian = 6371.0088
-        epsilon = 30000 / kms_per_radian  # 30000 meters in radians
+        epsilon = 20000 / kms_per_radian  # 20000 meters in radians
 
         print("Starting point clustering...")
-        db = DBSCAN(eps=epsilon, min_samples=3, metric=PointCluster.haversine_distance).fit(self.coords)
 
+        db = DBSCAN(eps=epsilon, min_samples=3, metric=PointCluster.haversine_distance).fit(self.coords)
         self.labels = db.labels_
 
         print("Calculating points per cluster...")
@@ -267,15 +272,15 @@ class PointCluster:
                 for thing in coords:
                     if thing['latitude'] == lat and thing['longitude'] == lon:
                         lat_lon.weight = thing['weight']
-                poi = Poi(poi.getName(), poi.getType(), lat_lon)     
+                poi = Poi(poi.get_name(), poi.get_type(), lat_lon)     
                 poi_list.append(poi)
 
         lat_lons = []
         for poi in poi_list:
             coord_dict = {}
-            coord_dict["latitude"] = poi.getPoint().getLat()
-            coord_dict["longitude"] = poi.getPoint().getLon()
-            coord_dict["weight"] = poi.getPoint().getWeight()
+            coord_dict["latitude"] = poi.get_point().get_lat()
+            coord_dict["longitude"] = poi.get_point().get_lon()
+            coord_dict["weight"] = poi.get_point().get_weight()
             lat_lons.append(coord_dict)
         return lat_lons
 
